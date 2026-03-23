@@ -270,7 +270,8 @@ const styles = `
 // ─── API Call (calls your Spring Boot backend) ────────────────────────────────
 
 async function generateWorkoutPlan(userProfile) {
-  const response = await fetch("/api/workout/generate", {
+  const baseUrl = import.meta.env.VITE_API_URL || "";
+  const response = await fetch(`${baseUrl}/api/workout/generate`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
