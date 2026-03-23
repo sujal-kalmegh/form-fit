@@ -14,8 +14,8 @@ public class WebConfig implements WebMvcConfigurer {
                         "http://localhost:5173",
                         "http://localhost:3000",
                         "http://localhost:8081",
-                        "https://formfit.vercel.app",      // ✅ your Vercel domain
-                        "https://formfit-*.vercel.app"      // ✅ preview deployments
+                        "https://form-fit-production.up.railway.app",
+                        "https://form-fit-jade.vercel.app"
                 )
                 .allowedMethods("GET", "POST", "OPTIONS")
                 .allowedHeaders("*")
