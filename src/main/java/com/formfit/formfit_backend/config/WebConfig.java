@@ -13,10 +13,11 @@ public class WebConfig implements WebMvcConfigurer {
                 .allowedOriginPatterns(
                         "http://localhost:*",
                         "https://form-fit-jade.vercel.app",
-                        "https://*.vercel.app"   // covers preview deployments too
+                        "https://*.vercel.app"
                 )
-                .allowedMethods("GET", "POST", "OPTIONS")
+                .allowedMethods("GET", "POST", "PUT", "DELETE", "OPTIONS")
                 .allowedHeaders("*")
+                .allowCredentials(false)
                 .maxAge(3600);
     }
 

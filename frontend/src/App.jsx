@@ -1,5 +1,6 @@
 import { useState } from "react";
-
+import AuthPage from "./pages/AuthPage";
+import { getUser, getToken, clearAuth } from "./api/auth";
 // ─── Constants ────────────────────────────────────────────────────────────────
 
 const GOALS = [
@@ -271,9 +272,13 @@ const styles = `
 
 async function generateWorkoutPlan(userProfile) {
   const baseUrl = import.meta.env.VITE_API_URL || "";
+  const token = getToken();
   const response = await fetch(`${baseUrl}/api/workout/generate`, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers: {
+      "Content-Type": "application/json",
+      "Authorization": `Bearer ${token}`,   // ← add this line
+    },
     body: JSON.stringify({
       goals: userProfile.goals,
       equipment: userProfile.equipment,
@@ -292,7 +297,6 @@ async function generateWorkoutPlan(userProfile) {
 
   return await response.json();
 }
-
 
 // ─── Step 1: Form ─────────────────────────────────────────────────────────────
 
@@ -529,12 +533,27 @@ function StepPlan({ plan, profile, onRestart }) {
 // ─── App Root ─────────────────────────────────────────────────────────────────
 
 export default function App() {
+  const [user, setUser] = useState(getUser()); // null if not logged in
   const [step, setStep] = useState(1);
   const [profile, setProfile] = useState(null);
   const [plan, setPlan] = useState(null);
   const [error, setError] = useState(null);
 
   const stepLabels = ["Your Profile", "AI Generation", "Your Plan"];
+
+  // Called when AuthPage succeeds
+  const handleAuth = (authData) => {
+    setUser({ email: authData.email, name: authData.name });
+  };
+
+  const handleLogout = () => {
+    clearAuth();
+    setUser(null);
+    setStep(1);
+    setProfile(null);
+    setPlan(null);
+    setError(null);
+  };
 
   const handleFormSubmit = async (data) => {
     setProfile(data);
@@ -562,44 +581,59 @@ export default function App() {
 
   const handleRestart = () => { setStep(1); setProfile(null); setPlan(null); setError(null); };
 
+  // Show auth page if not logged in
+  if (!user) return <AuthPage onAuth={handleAuth} />;
+
   return (
-    <>
-      <style>{styles}</style>
-      <div className="app">
-        <header className="header">
-          <div className="logo-dot" />
-          <div className="logo-text">Form<span>Fit</span></div>
-        </header>
+      <>
+        <style>{styles}</style>
+        <div className="app">
+          <header className="header">
+            <div className="logo-dot" />
+            <div className="logo-text">Form<span>Fit</span></div>
 
-        <div className="main">
-          {/* Left panel — always visible */}
-          <div className="left-panel">
-            <div className="step-badge"><span>🌿</span> AI-Powered Planner</div>
-            <h1 className="hero-title">Build your <em>perfect</em> workout plan.</h1>
-            <p className="hero-sub">Answer a few quick questions and our AI will craft a personalised training plan tailored to your body, goals, and lifestyle.</p>
-            <div className="progress-steps">
-              {stepLabels.map((label, i) => {
-                const n = i + 1;
-                const state = step > n ? "done" : step === n ? "active" : "pending";
-                return (
-                  <div key={i}>
-                    {i > 0 && <div className="step-connector" />}
-                    <div className="progress-step">
-                      <div className={`step-circle ${state}`}>{state === "done" ? "✓" : n}</div>
-                      <span className={`step-label ${state}`}>{label}</span>
-                    </div>
-                  </div>
-                );
-              })}
+            {/* User info + logout in header */}
+            <div style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: "14px" }}>
+            <span style={{ fontSize: "0.82rem", color: "var(--text-muted)" }}>
+              👋 {user.name || user.email}
+            </span>
+              <button onClick={handleLogout} style={{
+                padding: "7px 16px", borderRadius: "100px", border: "1.5px solid var(--border)",
+                background: "var(--surface)", fontFamily: "DM Sans, sans-serif",
+                fontSize: "0.78rem", fontWeight: 600, cursor: "pointer", color: "var(--text-muted)"
+              }}>
+                Log out
+              </button>
             </div>
-          </div>
+          </header>
 
-          {/* Right panel */}
-          {step === 1 && <StepForm onSubmit={handleFormSubmit} />}
-          {step === 2 && <StepLoading error={error} onRetry={handleRetry} />}
-          {step === 3 && plan && <StepPlan plan={plan} profile={profile} onRestart={handleRestart} />}
+          <div className="main">
+            <div className="left-panel">
+              <div className="step-badge"><span>🌿</span> AI-Powered Planner</div>
+              <h1 className="hero-title">Build your <em>perfect</em> workout plan.</h1>
+              <p className="hero-sub">Answer a few quick questions and our AI will craft a personalised training plan tailored to your body, goals, and lifestyle.</p>
+              <div className="progress-steps">
+                {stepLabels.map((label, i) => {
+                  const n = i + 1;
+                  const state = step > n ? "done" : step === n ? "active" : "pending";
+                  return (
+                      <div key={i}>
+                        {i > 0 && <div className="step-connector" />}
+                        <div className="progress-step">
+                          <div className={`step-circle ${state}`}>{state === "done" ? "✓" : n}</div>
+                          <span className={`step-label ${state}`}>{label}</span>
+                        </div>
+                      </div>
+                  );
+                })}
+              </div>
+            </div>
+
+            {step === 1 && <StepForm onSubmit={handleFormSubmit} />}
+            {step === 2 && <StepLoading error={error} onRetry={handleRetry} />}
+            {step === 3 && plan && <StepPlan plan={plan} profile={profile} onRestart={handleRestart} />}
+          </div>
         </div>
-      </div>
-    </>
+      </>
   );
 }
