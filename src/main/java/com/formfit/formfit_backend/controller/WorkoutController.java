@@ -65,7 +65,7 @@ public class WorkoutController{
         String email = authentication.getName();
         User user = userRepository.findByEmail(email)
                 .orElseThrow(() -> new RuntimeException("User not found."));
-        List<WorkoutPlan> plans = workoutPlanRepository.findTop3ByUserOrderByCreateAtDesc(user);
+        List<WorkoutPlan> plans = workoutPlanRepository.findTop3ByUserOrderByCreatedAtDesc(user);
         List<PlanHistoryResponse> responses = plans.stream().map(p -> {
             try {
                 Object parsed = objectMapper.readValue(p.getPlanJson(), Object.class);
