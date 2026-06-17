@@ -70,7 +70,7 @@ public class WorkoutController{
             try {
                 Object parsed = objectMapper.readValue(p.getPlanJson(), Object.class);
                 return new PlanHistoryResponse(
-                        p.getId(), p.getGoals(), p.getLevel(), p.getEquipment(), p.getDays(), parsed, p.getCreatedAt()
+                        p.getId(), p.getGoals(), p.getLevel(), p.getEquipment(), p.getDays(), parsed, p.getCreateAt()
                 );
             }
             catch (Exception e){
