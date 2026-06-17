@@ -42,7 +42,6 @@ export function clearAuth() {
 }
 
 export async function fetchHistory() {
-    const BASE_URL = import.meta.env.VITE_API_URL || "";
     const res = await fetch(`${BASE_URL}/api/workout/history`, {
         headers: { "Authorization": `Bearer ${getToken()}` },
     });
