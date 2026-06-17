@@ -40,3 +40,12 @@ export function clearAuth() {
     localStorage.removeItem("ff_token");
     localStorage.removeItem("ff_user");
 }
+
+export async function fetchHistory() {
+    const BASE_URL = import.meta.env.VITE_API_URL || "";
+    const res = await fetch(`${BASE_URL}/api/workout/history`, {
+        headers: { "Authorization": `Bearer ${getToken()}` },
+    });
+    if (!res.ok) return [];
+    return await res.json();
+}

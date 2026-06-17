@@ -1,6 +1,6 @@
 import { useState } from "react";
 import AuthPage from "./pages/AuthPage";
-import { getUser, getToken, clearAuth } from "./api/auth";
+import { getUser, getToken, clearAuth, fetchHistory } from "./api/auth";
 // ─── Constants ────────────────────────────────────────────────────────────────
 
 const GOALS = [
@@ -455,7 +455,7 @@ function StepPlan({ plan, profile, onRestart }) {
             <div className="meta-chip">🎯 <strong>{goalLabels}</strong></div>
             <div className="meta-chip">📊 <strong>{levelLabel}</strong></div>
             <div className="meta-chip">📅 <strong>{profile.days} days/week</strong></div>
-          </div>
+          undefined</div>
         </div>
 
         <div className="plan-intro">{plan.intro}</div>
@@ -530,6 +530,76 @@ function StepPlan({ plan, profile, onRestart }) {
   );
 }
 
+function PlanHistory({ onLoad }) {
+  const [history, setHistory] = useState([]);
+  const [open, setOpen] = useState(false);
+
+  const load = async () => {
+    const data = await fetchHistory();
+    setHistory(data);
+    setOpen(true);
+  };
+
+  if (!open) return (
+      <button onClick={load} style={{
+        padding: "8px 18px", borderRadius: "100px",
+        border: "1.5px solid var(--border)", background: "var(--surface)",
+        fontFamily: "DM Sans, sans-serif", fontSize: "0.78rem",
+        fontWeight: 600, cursor: "pointer", color: "var(--text-muted)",
+        marginLeft: "8px"
+      }}>
+        📋 History
+      </button>
+  );
+
+  return (
+      <div style={{
+        position: "fixed", top: 0, left: 0, right: 0, bottom: 0,
+        background: "rgba(0,0,0,0.4)", zIndex: 100,
+        display: "flex", alignItems: "center", justifyContent: "center"
+      }}>
+        <div style={{
+          background: "var(--surface)", borderRadius: "20px",
+          padding: "36px", width: "100%", maxWidth: "520px",
+          maxHeight: "80vh", overflowY: "auto",
+          border: "1px solid var(--border)"
+        }}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "24px" }}>
+            <div style={{ fontFamily: "DM Serif Display, serif", fontSize: "1.4rem" }}>Your Plans</div>
+            <button onClick={() => setOpen(false)} style={{
+              background: "none", border: "none", fontSize: "1.2rem",
+              cursor: "pointer", color: "var(--text-muted)"
+            }}>✕</button>
+          </div>
+
+          {history.length === 0 ? (
+              <div style={{ color: "var(--text-muted)", fontSize: "0.85rem" }}>No plans saved yet.</div>
+          ) : history.map((item, i) => (
+              <div key={i} onClick={() => { onLoad(item.plan); setOpen(false); }}
+                   style={{
+                     padding: "16px", borderRadius: "12px", border: "1.5px solid var(--border)",
+                     marginBottom: "12px", cursor: "pointer", transition: "border-color 0.2s"
+                   }}
+                   onMouseEnter={e => e.currentTarget.style.borderColor = "var(--accent)"}
+                   onMouseLeave={e => e.currentTarget.style.borderColor = "var(--border)"}
+              >
+                <div style={{ fontWeight: 600, fontSize: "0.88rem", marginBottom: "4px" }}>
+                  {item.goals}
+                </div>
+                <div style={{ fontSize: "0.78rem", color: "var(--text-muted)" }}>
+                  {item.level} · {item.days} days/week · {item.equipment || "No equipment"}
+                </div>
+                <div style={{ fontSize: "0.72rem", color: "var(--text-muted)", marginTop: "6px" }}>
+                  {new Date(item.createdAt).toLocaleDateString("en-IN", {
+                    day: "numeric", month: "short", year: "numeric"
+                  })}
+                </div>
+              </div>
+          ))}
+        </div>
+      </div>
+  );
+}
 // ─── App Root ─────────────────────────────────────────────────────────────────
 
 export default function App() {
@@ -594,14 +664,11 @@ export default function App() {
 
             {/* User info + logout in header */}
             <div style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: "14px" }}>
-            <span style={{ fontSize: "0.82rem", color: "var(--text-muted)" }}>
-              👋 {user.name || user.email}
-            </span>
-              <button onClick={handleLogout} style={{
-                padding: "7px 16px", borderRadius: "100px", border: "1.5px solid var(--border)",
-                background: "var(--surface)", fontFamily: "DM Sans, sans-serif",
-                fontSize: "0.78rem", fontWeight: 600, cursor: "pointer", color: "var(--text-muted)"
-              }}>
+              <span style={{ fontSize: "0.82rem", color: "var(--text-muted)" }}>
+                👋 {user.name || user.email}
+              </span>
+              <PlanHistory onLoad={(plan) => { setPlan(plan); setStep(3); }} />  {/* ← add this */}
+              <button onClick={handleLogout} style={{...}}>
                 Log out
               </button>
             </div>

@@ -1,48 +1,82 @@
 package com.formfit.formfit_backend.controller;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.formfit.formfit_backend.dto.PlanHistoryResponse;
 import com.formfit.formfit_backend.dto.WorkoutRequest;
-import com.formfit.formfit_backend.dto.WorkoutResponse;
-import com.formfit.formfit_backend.service.GroqService;   // ✅ updated import
+import com.formfit.formfit_backend.entity.User;
+import com.formfit.formfit_backend.entity.WorkoutPlan;
+import com.formfit.formfit_backend.repository.UserRepository;
+import com.formfit.formfit_backend.repository.WorkoutPlanRepository;
+import com.formfit.formfit_backend.service.GroqService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
-@Slf4j
 @RestController
 @RequestMapping("/api/workout")
 @RequiredArgsConstructor
-public class WorkoutController {
+public class WorkoutController{
+    private final GroqService groqService;
+    private final UserRepository userRepository;
+    private final WorkoutPlanRepository workoutPlanRepository;
+    private final ObjectMapper objectMapper;
 
-    private final GroqService groqService;   // ✅ updated
+    @GetMapping("/health")
+    public ResponseEntity<Map<String, String>> health(){
+        return ResponseEntity.ok(Map.of("status", "ok", "service", "FormFit Backend"));
+    }
 
     @PostMapping("/generate")
-    public ResponseEntity<?> generateWorkoutPlan(@Valid @RequestBody WorkoutRequest request) {
-        log.info("Received workout request - level: {}, days: {}, goals: {}",
-                request.getLevel(), request.getDays(), request.getGoals());
+    public ResponseEntity<?> generatePlan(
+        @Valid @RequestBody WorkoutRequest request,
+                Authentication authentication){
         try {
-            WorkoutResponse plan = groqService.generateWorkoutPlan(request);
-            log.info("Successfully generated plan: {}", plan.getPlanTitle());
+            Object plan = groqService.generateWorkoutPlan(request);
+
+            String email = authentication.getName();
+            User user = userRepository.findByEmail(email)
+                    .orElseThrow(() -> new RuntimeException(("User not found.")));
+            WorkoutPlan saved = WorkoutPlan.builder()
+                    .user(user)
+                    .goals(String.join(", ", request.getGoals()))
+                    .level(request.getLevel())
+                    .equipment(request.getLevel() != null ? String.join(", ", request.getEquipment()) : "")
+                    .days(request.getDays())
+                    .planJson(objectMapper.writeValueAsString(plan))
+                    .build();
+
+            workoutPlanRepository.save(saved);
             return ResponseEntity.ok(plan);
-        } catch (Exception e) {
-            log.error("Failed to generate workout plan.", e);
-            return ResponseEntity
-                    .internalServerError()
-                    .body(Map.of(
-                            "error", "Failed to generate workout plan",
-                            "message", e.getMessage()
-                    ));
+        }
+        catch (Exception e) {
+            return ResponseEntity.internalServerError()
+                    .body(Map.of("message", e.getMessage()));
         }
     }
 
-    @GetMapping("/health")
-    public ResponseEntity<Map<String, String>> health() {
-        return ResponseEntity.ok(Map.of(
-                "status", "ok",
-                "service", "FormFit Backend"
-        ));
+    @GetMapping("/history")
+    public ResponseEntity<List<PlanHistoryResponse>> getHistory(Authentication authentication){
+        String email = authentication.getName();
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new RuntimeException("User not found."));
+        List<WorkoutPlan> plans = workoutPlanRepository.findTop3ByUserOrderByCreateAtDesc(user);
+        List<PlanHistoryResponse> responses = plans.stream().map(p -> {
+            try {
+                Object parsed = objectMapper.readValue(p.getPlanJson(), Object.class);
+                return new PlanHistoryResponse(
+                        p.getId(), p.getGoals(), p.getLevel(), p.getEquipment(), p.getDays(), parsed, p.getCreateAt()
+                );
+            }
+            catch (Exception e){
+                return null;
+            }
+        }).collect(Collectors.toList());
+        return ResponseEntity.ok(responses);
     }
 }
