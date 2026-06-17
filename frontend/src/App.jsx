@@ -455,7 +455,7 @@ function StepPlan({ plan, profile, onRestart }) {
             <div className="meta-chip">🎯 <strong>{goalLabels}</strong></div>
             <div className="meta-chip">📊 <strong>{levelLabel}</strong></div>
             <div className="meta-chip">📅 <strong>{profile.days} days/week</strong></div>
-          undefined</div>
+          </div>
         </div>
 
         <div className="plan-intro">{plan.intro}</div>
@@ -575,7 +575,7 @@ function PlanHistory({ onLoad }) {
           {history.length === 0 ? (
               <div style={{ color: "var(--text-muted)", fontSize: "0.85rem" }}>No plans saved yet.</div>
           ) : history.map((item, i) => (
-              <div key={i} onClick={() => { onLoad(item.plan); setOpen(false); }}
+              <div key={i} onClick={() => { onLoad(item.plan, item); setOpen(false); }}
                    style={{
                      padding: "16px", borderRadius: "12px", border: "1.5px solid var(--border)",
                      marginBottom: "12px", cursor: "pointer", transition: "border-color 0.2s"
@@ -667,7 +667,16 @@ export default function App() {
               <span style={{ fontSize: "0.82rem", color: "var(--text-muted)" }}>
                 👋 {user.name || user.email}
               </span>
-              <PlanHistory onLoad={(plan) => { setPlan(plan); setStep(3); }} />  {/* ← add this */}
+              <PlanHistory onLoad={(plan, item) => {
+                setProfile({
+                  goals: item.goals ? item.goals.split(", ") : [],
+                  level: item.level || "",
+                  days: item.days || 0,
+                  equipment: item.equipment ? item.equipment.split(", ") : []
+                });
+                setPlan(plan);
+                setStep(3);
+              }} />
               <button onClick={handleLogout} style={{
                 padding: "7px 16px", borderRadius: "100px", border: "1.5px solid var(--border)",
                 background: "var(--surface)", fontFamily: "DM Sans, sans-serif",
