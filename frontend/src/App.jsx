@@ -668,7 +668,11 @@ export default function App() {
                 👋 {user.name || user.email}
               </span>
               <PlanHistory onLoad={(plan) => { setPlan(plan); setStep(3); }} />  {/* ← add this */}
-              <button onClick={handleLogout} style={{...}}>
+              <button onClick={handleLogout} style={{
+                padding: "7px 16px", borderRadius: "100px", border: "1.5px solid var(--border)",
+                background: "var(--surface)", fontFamily: "DM Sans, sans-serif",
+                fontSize: "0.78rem", fontWeight: 600, cursor: "pointer", color: "var(--text-muted)"
+              }}>
                 Log out
               </button>
             </div>
