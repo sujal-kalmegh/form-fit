@@ -1,5 +1,6 @@
 package com.formfit.formfit_backend.entity;
 
+import com.fasterxml.jackson.annotation.JsonFormat;
 import jakarta.persistence.*;
 import lombok.*;
 import java.time.LocalDateTime;
@@ -32,11 +33,11 @@ public class WorkoutPlan {
     @Column(columnDefinition = "TEXT")
     private String planJson;
 
-    @Column(nullable = false)
-    private LocalDateTime createAt;
+    @JsonFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss")
+    private LocalDateTime createdAt;
 
     @PrePersist
     protected void onCreate(){
-        createAt = LocalDateTime.now();
+        createdAt = LocalDateTime.now();
     }
 }
